@@ -183,12 +183,22 @@ function PayrollInner() {
             <p className="text-sm text-slate-500">Nothing skipped — a draft was created for every eligible employee.</p>
           ) : (
             <ul className="space-y-1 text-sm text-slate-600">
-              {skipped.map((s: any, i: number) => (
-                <li key={s.employeeId || i} className="flex justify-between gap-4 border-b border-slate-100 py-1">
-                  <span className="font-medium text-navy">{s.name || s.employeeId}</span>
-                  <span className="text-slate-500">{s.reason}</span>
-                </li>
-              ))}
+              {skipped.map((s: any, i: number) => {
+                const noStructure = /structure/i.test(s.reason || '');
+                return (
+                  <li key={s.employeeId || i} className="flex items-center justify-between gap-4 border-b border-slate-100 py-1.5">
+                    <span className="font-medium text-navy">{s.name || s.employeeId}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-slate-500">{s.reason}</span>
+                      {noStructure && s.employeeId && (
+                        <Button variant="ghost" className="px-2.5 py-1 text-xs" onClick={() => setStructFor({ id: s.employeeId, name: s.name })}>
+                          Set structure
+                        </Button>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </Card>
