@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, session, ApiUser } from '@/lib/api';
 import { Button, ErrorText, Field, TextInput } from '@/components/ui';
+import { LogoMark } from '@/components/Logo';
 
 type LoginData = { otpRequired?: boolean; token?: string; user?: ApiUser };
 
@@ -45,8 +46,9 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-navy p-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl">
-        <div className="mb-6 text-center">
-          <div className="text-2xl font-bold text-navy">Bharat<span className="text-herb">HR</span></div>
+        <div className="mb-6 flex flex-col items-center text-center">
+          <LogoMark size={56} />
+          <div className="mt-3 text-2xl font-bold text-navy">Bharat<span className="text-herb">HR</span></div>
           <p className="mt-1 text-sm text-slate-500">Admin portal — sign in</p>
         </div>
         <form onSubmit={submit} className="space-y-4">

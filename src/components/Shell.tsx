@@ -4,6 +4,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { session } from '@/lib/api';
+import { Logo } from '@/components/Logo';
 
 // Portal shell: navy sidebar with role-gated nav + top bar. Client-side auth
 // gate — no token → /login.
@@ -88,8 +89,7 @@ export default function Shell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen bg-slate-50">
       <aside className="fixed inset-y-0 left-0 w-60 overflow-y-auto bg-navy text-white">
         <div className="border-b border-white/10 px-5 py-5">
-          <div className="text-lg font-bold">Bharat<span className="text-herb">HR</span></div>
-          <div className="mt-0.5 text-xs text-white/60">Admin portal</div>
+          <Logo onDark subtitle="Admin portal" />
         </div>
         <nav className="px-3 py-4">
           {visible.map((s) => (
