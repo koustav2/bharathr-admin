@@ -8,6 +8,7 @@ import { api, apiUpload, fmt, openFile } from '@/lib/api';
 import {
   Button, Card, Chip, Empty, ErrorText, Field, Loading, Modal, Select, StatTile, Table, Td, TextInput,
 } from '@/components/ui';
+import { StructureEditorModal } from '@/components/StructureEditor';
 
 const DOC_TYPES = ['OFFER_LETTER', 'AADHAAR', 'PAN', 'BANK_PROOF', 'EDUCATION', 'EXPERIENCE', 'PHOTO', 'SIGNATURE', 'OTHER'];
 const EMPLOYMENT_TYPES = ['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERN'];
@@ -239,6 +240,7 @@ function EmployeeDetailInner() {
   const [bankOpen, setBankOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const [structOpen, setStructOpen] = useState(false);
 
   // Edit form state
   const [edit, setEdit] = useState<any>({});
@@ -543,11 +545,31 @@ function EmployeeDetailInner() {
             <Button variant="danger" onClick={() => { setActionError(null); setResetOpen(true); }}>Reset password</Button>
           </div>
         </Card>
+
+        <Card title="Salary structure">
+          <p className="text-sm text-slate-500">
+            Set this employee&apos;s pay: the company template pre-fills every percentage and allowance, so usually
+            you just enter their monthly CTC. Special Allowance auto-balances so gross always equals the CTC.
+            A structure is required before payroll can generate their payslip.
+          </p>
+          <div className="mt-4">
+            <Button onClick={() => setStructOpen(true)}>Edit salary structure</Button>
+          </div>
+        </Card>
       </div>
 
       <AttendanceSection employeeId={id} />
 
       {/* ------------------------------------------------------- Modals */}
+      {structOpen && (
+        <StructureEditorModal
+          employeeId={id}
+          employeeName={name}
+          onClose={() => setStructOpen(false)}
+          onSaved={() => setStructOpen(false)}
+        />
+      )}
+
       {confirmActive !== null && (
         <Modal title={confirmActive ? 'Activate employee' : 'Deactivate employee'} onClose={() => setConfirmActive(null)}>
           <p className="text-sm text-slate-600">
