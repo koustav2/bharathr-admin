@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Shell from '@/components/Shell';
 import { api, apiUpload } from '@/lib/api';
@@ -10,78 +10,49 @@ const EMPLOYMENT_TYPES = ['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERN'];
 
 type ManagerHit = { id: string; empCode?: string; name: string; designation?: string };
 
-/** Search-as-you-type employee picker (uses GET /employees/search?q=). */
-function ManagerPicker({ label, value, onChange }: {
+/** Pick a manager from a dropdown list of employees (loaded once).
+ *  A filter box narrows the list when there are many employees. */
+function ManagerPicker({ label, value, onChange, employees }: {
   label: string;
   value: { id: string; label: string } | null;
   onChange: (v: { id: string; label: string } | null) => void;
+  employees: ManagerHit[];
 }) {
-  const [query, setQuery] = useState('');
-  const [hits, setHits] = useState<ManagerHit[]>([]);
-  const [open, setOpen] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  function search(q: string) {
-    setQuery(q);
-    if (value) onChange(null);
-    if (timer.current) clearTimeout(timer.current);
-    if (!q.trim()) {
-      setHits([]);
-      setOpen(false);
-      return;
-    }
-    timer.current = setTimeout(async () => {
-      try {
-        const res = await api<ManagerHit[]>(`/employees/search?q=${encodeURIComponent(q.trim())}`);
-        setHits(res || []);
-        setOpen(true);
-      } catch {
-        setHits([]);
-      }
-    }, 300);
-  }
+  const [filter, setFilter] = useState('');
+  const q = filter.trim().toLowerCase();
+  const shown = q
+    ? employees.filter((e) => e.name.toLowerCase().includes(q) || (e.empCode || '').toLowerCase().includes(q))
+    : employees;
 
   return (
     <Field label={label}>
-      <div className="relative">
+      {employees.length > 8 && (
         <TextInput
-          placeholder="Type a name or emp code…"
-          value={value ? value.label : query}
-          onChange={(e) => search(e.target.value)}
-          onFocus={() => hits.length > 0 && setOpen(true)}
-          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          className="mb-2"
+          placeholder="Filter by name or emp code…"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
         />
-        {open && hits.length > 0 && (
-          <div className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
-            {hits.map((h) => (
-              <button
-                key={h.id}
-                type="button"
-                className="block w-full px-3 py-2 text-left text-sm hover:bg-slate-50"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  onChange({ id: h.id, label: `${h.name}${h.empCode ? ` (${h.empCode})` : ''}` });
-                  setQuery('');
-                  setOpen(false);
-                }}
-              >
-                <span className="font-semibold text-navy">{h.name}</span>
-                {h.empCode && <span className="ml-2 font-mono text-xs text-slate-500">{h.empCode}</span>}
-                {h.designation && <span className="ml-2 text-xs text-slate-400">{h.designation}</span>}
-              </button>
-            ))}
-          </div>
-        )}
-        {value && (
-          <button
-            type="button"
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-red-500"
-            onClick={() => { onChange(null); setQuery(''); }}
-          >
-            ✕
-          </button>
-        )}
-      </div>
+      )}
+      <Select
+        value={value?.id || ''}
+        onChange={(e) => {
+          const id = e.target.value;
+          if (!id) { onChange(null); return; }
+          const emp = employees.find((x) => x.id === id);
+          if (emp) onChange({ id: emp.id, label: `${emp.name}${emp.empCode ? ` (${emp.empCode})` : ''}` });
+        }}
+      >
+        <option value="">— None —</option>
+        {shown.map((e) => (
+          <option key={e.id} value={e.id}>
+            {e.name}{e.empCode ? ` (${e.empCode})` : ''}{e.designation ? ` · ${e.designation}` : ''}
+          </option>
+        ))}
+      </Select>
+      {employees.length === 0 && (
+        <p className="mt-1 text-xs text-slate-400">No employees yet — add the first hire without a manager.</p>
+      )}
     </Field>
   );
 }
@@ -127,9 +98,23 @@ export default function RegisterEmployeePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<any | null>(null);
+  const [employees, setEmployees] = useState<ManagerHit[]>([]);
 
   useEffect(() => {
     api<any>('/meta/masters').then(setMasters).catch(() => setMasters({}));
+    // Managers are picked from the existing employee list.
+    api<any[]>('/employees')
+      .then((rows) =>
+        setEmployees(
+          (rows || []).map((r) => ({
+            id: r.id,
+            name: r.name || `${r.firstName || ''} ${r.lastName || ''}`.trim(),
+            empCode: r.empCode,
+            designation: r.designation,
+          })),
+        ),
+      )
+      .catch(() => setEmployees([]));
   }, []);
 
   async function submit(e: React.FormEvent) {
@@ -228,8 +213,8 @@ export default function RegisterEmployeePage() {
             </Field>
           </div>
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <ManagerPicker label="Reporting manager" value={reportingManager} onChange={setReportingManager} />
-            <ManagerPicker label="Functional manager" value={functionalManager} onChange={setFunctionalManager} />
+            <ManagerPicker label="Reporting manager" value={reportingManager} onChange={setReportingManager} employees={employees} />
+            <ManagerPicker label="Functional manager" value={functionalManager} onChange={setFunctionalManager} employees={employees} />
           </div>
         </Card>
 
