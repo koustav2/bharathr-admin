@@ -168,6 +168,17 @@ export function StructureEditorModal({ employeeId, employeeName, onClose, onSave
   const [warnings, setWarnings] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [prefilled, setPrefilled] = useState(false);
+
+  async function prefillFromTemplate() {
+    try {
+      const tmpl = await api<any>('/payroll/template');
+      setForm(structureToForm(tmpl?.template ?? tmpl));
+      setPrefilled(true);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -178,10 +189,20 @@ export function StructureEditorModal({ employeeId, employeeName, onClose, onSave
         const data = await api<any>(`/employees/${employeeId}/salary-structure`);
         if (cancelled) return;
         const structure = data?.structure;
-        setForm(structureToForm(structure));
-        setMonthlyCtc(toStr(structure?.monthlyCtc));
-        setGrade(toStr(structure?.grade));
-        setPreview(data?.preview ?? null);
+        if (structure) {
+          // Existing structure — show its saved values.
+          setForm(structureToForm(structure));
+          setMonthlyCtc(toStr(structure.monthlyCtc));
+          setGrade(toStr(structure.grade));
+          setPreview(data?.preview ?? null);
+        } else {
+          // No structure yet — pre-fill the percentages/allowances from the
+          // company template so HR only has to enter the CTC.
+          const tmpl = await api<any>('/payroll/template');
+          if (cancelled) return;
+          setForm(structureToForm(tmpl?.template ?? tmpl));
+          setPrefilled(true);
+        }
       } catch (err: any) {
         if (!cancelled) setError(err.message);
       } finally {
@@ -229,6 +250,18 @@ export function StructureEditorModal({ employeeId, employeeName, onClose, onSave
             <Field label="Grade (optional)">
               <TextInput value={grade} onChange={(e) => setGrade(e.target.value)} />
             </Field>
+          </div>
+          {prefilled && (
+            <div className="rounded-lg border border-herb bg-herb-soft p-3 text-sm text-herb-dark">
+              Percentages and allowances below are pre-filled from the company salary template.
+              Enter the Monthly CTC above — adjust any field if this person differs — then Save.
+            </div>
+          )}
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-bold uppercase tracking-wide text-slate-400">Components</div>
+            <Button variant="ghost" className="px-2.5 py-1 text-xs" onClick={prefillFromTemplate}>
+              Prefill from template
+            </Button>
           </div>
           <StructureFields form={form} onChange={(k, v) => setForm((f) => ({ ...f, [k]: v }))} />
           {warnings.length > 0 && (
