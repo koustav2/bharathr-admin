@@ -8,8 +8,6 @@ import { Button, Card, Chip, Empty, ErrorText, Field, Loading, Modal, Table, Td,
 export default function LeaveSettingsPage() {
   const [types, setTypes] = useState<any[] | null>(null);
   const [typesError, setTypesError] = useState<string | null>(null);
-  const [ents, setEnts] = useState<any[] | null>(null);
-  const [entsError, setEntsError] = useState<string | null>(null);
 
   // Leave type edit modal
   const [editType, setEditType] = useState<any | null>(null);
@@ -19,16 +17,6 @@ export default function LeaveSettingsPage() {
   const [allowCertificate, setAllowCertificate] = useState(false);
   const [typeSaveError, setTypeSaveError] = useState<string | null>(null);
   const [typeBusy, setTypeBusy] = useState(false);
-
-  // Entitlement edit modal
-  const [entOpen, setEntOpen] = useState(false);
-  const [entOriginal, setEntOriginal] = useState<any | null>(null);
-  const [state, setState] = useState('');
-  const [el, setEl] = useState('');
-  const [cl, setCl] = useState('');
-  const [sl, setSl] = useState('');
-  const [entSaveError, setEntSaveError] = useState<string | null>(null);
-  const [entBusy, setEntBusy] = useState(false);
 
   const loadTypes = useCallback(async () => {
     setTypesError(null);
@@ -40,20 +28,7 @@ export default function LeaveSettingsPage() {
     }
   }, []);
 
-  const loadEnts = useCallback(async () => {
-    setEntsError(null);
-    try {
-      setEnts(await api<any[]>('/admin/entitlements'));
-    } catch (err: any) {
-      setEntsError(err.message);
-      setEnts([]);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadTypes();
-    loadEnts();
-  }, [loadTypes, loadEnts]);
+  useEffect(() => { loadTypes(); }, [loadTypes]);
 
   function openTypeEdit(t: any) {
     setEditType(t);
@@ -88,49 +63,6 @@ export default function LeaveSettingsPage() {
     }
   }
 
-  function openEntAdd() {
-    setEntOriginal(null);
-    setState('');
-    setEl('');
-    setCl('');
-    setSl('');
-    setEntSaveError(null);
-    setEntOpen(true);
-  }
-
-  function openEntEdit(row: any) {
-    setEntOriginal(row);
-    setState(row.state || '');
-    setEl(row.el != null ? String(row.el) : '');
-    setCl(row.cl != null ? String(row.cl) : '');
-    setSl(row.sl != null ? String(row.sl) : '');
-    setEntSaveError(null);
-    setEntOpen(true);
-  }
-
-  async function saveEnt(e: React.FormEvent) {
-    e.preventDefault();
-    setEntBusy(true);
-    setEntSaveError(null);
-    try {
-      await api('/admin/entitlements', {
-        method: 'PUT',
-        body: {
-          state,
-          el: el === '' ? 0 : Number(el),
-          cl: cl === '' ? 0 : Number(cl),
-          sl: sl === '' ? 0 : Number(sl),
-        },
-      });
-      setEntOpen(false);
-      await loadEnts();
-    } catch (err: any) {
-      setEntSaveError(err.message);
-    } finally {
-      setEntBusy(false);
-    }
-  }
-
   return (
     <Shell>
       <div className="mb-5">
@@ -138,6 +70,15 @@ export default function LeaveSettingsPage() {
       </div>
 
       <div className="space-y-6">
+        <Card title="Leave policy">
+          <p className="text-sm text-slate-600">
+            Employees get a single <strong>Leave</strong> balance of the configured annual quota, granted in two
+            equal half-year blocks — <strong>Jan–Jun</strong> and <strong>Jul–Dec</strong>. Each block&apos;s balance
+            is available only within that half-year; <strong>unused leave lapses</strong> when the next block begins
+            (no carry-over). The current quota of 12 days therefore grants 6 days per half-year.
+          </p>
+        </Card>
+
         <Card title="Leave types">
           <ErrorText error={typesError} />
           {types === null ? (
@@ -168,37 +109,12 @@ export default function LeaveSettingsPage() {
             </Table>
           )}
         </Card>
-
-        <Card title="State entitlements" actions={<Button onClick={openEntAdd}>Add / Edit</Button>}>
-          <ErrorText error={entsError} />
-          {ents === null ? (
-            <Loading />
-          ) : ents.length === 0 ? (
-            <Empty message="No state entitlements configured." />
-          ) : (
-            <Table headers={['State', 'EL', 'CL', 'SL', '']}>
-              {ents.map((row: any, i: number) => (
-                <tr key={row.state ?? i} className="hover:bg-slate-50">
-                  <Td className="font-semibold text-navy">{row.state || '—'}</Td>
-                  <Td>{row.el ?? '—'}</Td>
-                  <Td>{row.cl ?? '—'}</Td>
-                  <Td>{row.sl ?? '—'}</Td>
-                  <Td>
-                    <Button variant="ghost" className="!px-3 !py-1 text-xs" onClick={() => openEntEdit(row)}>
-                      Edit
-                    </Button>
-                  </Td>
-                </tr>
-              ))}
-            </Table>
-          )}
-        </Card>
       </div>
 
       {editType && (
         <Modal title={`Edit leave type — ${editType.code}`} onClose={() => setEditType(null)}>
           <form onSubmit={saveType} className="space-y-4">
-            <Field label="Annual quota">
+            <Field label="Annual quota (split across two half-years)">
               <TextInput
                 type="number"
                 min={0}
@@ -224,41 +140,6 @@ export default function LeaveSettingsPage() {
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setEditType(null)}>Cancel</Button>
               <Button type="submit" disabled={typeBusy}>{typeBusy ? 'Saving…' : 'Save'}</Button>
-            </div>
-          </form>
-        </Modal>
-      )}
-
-      {entOpen && (
-        <Modal
-          title={entOriginal ? `Edit entitlement — ${entOriginal.state}` : 'Add entitlement'}
-          onClose={() => setEntOpen(false)}
-        >
-          <form onSubmit={saveEnt} className="space-y-4">
-            <Field label="State">
-              <TextInput
-                value={state}
-                onChange={(e) => setState(e.target.value)}
-                required
-                disabled={!!entOriginal}
-                autoFocus={!entOriginal}
-              />
-            </Field>
-            <div className="grid grid-cols-3 gap-3">
-              <Field label="EL">
-                <TextInput type="number" min={0} value={el} onChange={(e) => setEl(e.target.value)} />
-              </Field>
-              <Field label="CL">
-                <TextInput type="number" min={0} value={cl} onChange={(e) => setCl(e.target.value)} />
-              </Field>
-              <Field label="SL">
-                <TextInput type="number" min={0} value={sl} onChange={(e) => setSl(e.target.value)} />
-              </Field>
-            </div>
-            <ErrorText error={entSaveError} />
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setEntOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={entBusy}>{entBusy ? 'Saving…' : 'Save'}</Button>
             </div>
           </form>
         </Modal>

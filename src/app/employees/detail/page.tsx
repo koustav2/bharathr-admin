@@ -258,6 +258,10 @@ function EmployeeDetailInner() {
   const [docFile, setDocFile] = useState<File | null>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
 
+  // Appointment-letter generation options
+  const [incLogo, setIncLogo] = useState(true);
+  const [incSig, setIncSig] = useState(true);
+
   const load = useCallback(async () => {
     if (!id) return;
     try {
@@ -393,7 +397,7 @@ function EmployeeDetailInner() {
   }
 
   async function generateOffer() {
-    const raw = window.prompt('Annual CTC (INR) for the offer letter:', emp.ctc ? String(emp.ctc) : '');
+    const raw = window.prompt('Annual CTC (INR) for the appointment letter:', emp.ctc ? String(emp.ctc) : '');
     if (raw === null) return;
     const ctcNum = Number(raw);
     if (!raw.trim() || Number.isNaN(ctcNum) || ctcNum <= 0) {
@@ -403,7 +407,7 @@ function EmployeeDetailInner() {
     setBusy(true);
     setActionError(null);
     try {
-      await api(`/employees/${id}/offer-letter`, { method: 'POST', body: { ctc: ctcNum } });
+      await api(`/employees/${id}/offer-letter`, { method: 'POST', body: { ctc: ctcNum, includeLogo: incLogo, includeSignature: incSig } });
       await load();
     } catch (err: any) {
       setActionError(err.message);
@@ -527,10 +531,21 @@ function EmployeeDetailInner() {
       </div>
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-        <Card title="Offer letter">
+        <Card title="Appointment letter">
           <p className="text-sm text-slate-500">
-            Generate (or regenerate) the Offer Letter + Annexure A from a CTC amount, or view the current PDF.
+            Generate (or regenerate) the Appointment Letter + Annexure A from a CTC amount, or view the current PDF.
           </p>
+          <div className="mt-3 flex flex-wrap gap-4">
+            <label className="flex items-center gap-2 text-sm text-navy">
+              <input type="checkbox" checked={incLogo} onChange={(e) => setIncLogo(e.target.checked)} />
+              Include company logo
+            </label>
+            <label className="flex items-center gap-2 text-sm text-navy">
+              <input type="checkbox" checked={incSig} onChange={(e) => setIncSig(e.target.checked)} />
+              Include authorised signature
+            </label>
+          </div>
+          <p className="mt-1 text-xs text-slate-400">Set the signatory name &amp; signature in Settings.</p>
           <div className="mt-4 flex gap-3">
             <Button onClick={generateOffer} disabled={busy}>Generate (CTC)</Button>
             <Button variant="ghost" onClick={() => openFile(`/employees/${id}/offer-letter.pdf`)}>View PDF</Button>

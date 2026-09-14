@@ -93,6 +93,8 @@ export default function RegisterEmployeePage() {
   const [ctc, setCtc] = useState('');
   const [autoOffer, setAutoOffer] = useState(false);
   const [offerFile, setOfferFile] = useState<File | null>(null);
+  const [incLogo, setIncLogo] = useState(true);
+  const [incSig, setIncSig] = useState(true);
 
   const [masters, setMasters] = useState<any>({});
   const [busy, setBusy] = useState(false);
@@ -138,6 +140,8 @@ export default function RegisterEmployeePage() {
           functionalManagerId: functionalManager?.id,
           ctc: ctc || undefined,
           autoOfferLetter: autoOffer ? 'true' : undefined,
+          includeLogo: autoOffer ? String(incLogo) : undefined,
+          includeSignature: autoOffer ? String(incSig) : undefined,
         },
         offerFile ? { part: 'offerLetter', blob: offerFile, filename: offerFile.name } : undefined,
       );
@@ -155,7 +159,7 @@ export default function RegisterEmployeePage() {
         <div className="mx-auto max-w-xl">
           <Card title="Employee registered">
             <p className="text-sm text-slate-600">
-              Offer sent to <span className="font-semibold text-navy">{personalEmail}</span>. Share this joining
+              Appointment sent to <span className="font-semibold text-navy">{personalEmail}</span>. Share this joining
               code with the candidate if needed:
             </p>
             <div className="my-5 rounded-xl border-2 border-dashed border-herb bg-herb-soft px-6 py-5 text-center">
@@ -218,12 +222,12 @@ export default function RegisterEmployeePage() {
           </div>
         </Card>
 
-        <Card title="Offer letter">
+        <Card title="Appointment letter">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Annual CTC (INR, optional)">
               <TextInput type="number" min={0} step="0.01" value={ctc} onChange={(e) => setCtc(e.target.value)} />
             </Field>
-            <Field label="Upload offer letter (PDF, optional)">
+            <Field label="Upload appointment letter (PDF, optional)">
               <input
                 type="file"
                 accept="application/pdf"
@@ -239,11 +243,23 @@ export default function RegisterEmployeePage() {
               onChange={(e) => setAutoOffer(e.target.checked)}
               className="h-4 w-4 rounded border-slate-300 accent-[#3f7d4e]"
             />
-            Auto-generate offer letter + Annexure A from CTC
+            Auto-generate appointment letter + Annexure A from CTC
           </label>
+          {autoOffer && (
+            <div className="mt-3 flex flex-wrap gap-4 pl-6">
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input type="checkbox" checked={incLogo} onChange={(e) => setIncLogo(e.target.checked)} className="h-4 w-4 rounded border-slate-300 accent-[#3f7d4e]" />
+                Include company logo
+              </label>
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input type="checkbox" checked={incSig} onChange={(e) => setIncSig(e.target.checked)} className="h-4 w-4 rounded border-slate-300 accent-[#3f7d4e]" />
+                Include authorised signature
+              </label>
+            </div>
+          )}
           <p className="mt-2 text-xs text-slate-400">
             Provide either an uploaded PDF or tick auto-generate (requires CTC). The candidate receives the
-            offer email with an accept link and joining code.
+            appointment email with an accept link and joining code. Set the signatory in Settings.
           </p>
         </Card>
 

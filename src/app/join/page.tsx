@@ -152,7 +152,7 @@ function JoinInner() {
 
   if (loading && !data) return <Page><Loading /></Page>;
 
-  if (rejected) return <Terminal title="Offer declined" message="You have declined this offer. Thank you for letting us know." tone="bad" />;
+  if (rejected) return <Terminal title="Appointment declined" message="You have declined this appointment. Thank you for letting us know." tone="bad" />;
   if (submitted) return <Terminal title="e-Joining submitted" message="Thank you! Your e-joining has been submitted. HR will review it shortly and email your login details once approved." tone="good" />;
 
   if (error && !data) {
@@ -173,7 +173,7 @@ function JoinInner() {
 
   // ----- Terminal statuses -----
   if (status === 'OFFER_REJECTED') {
-    return <Terminal title="Offer declined" message="This offer has been declined. If this is a mistake, please contact HR." tone="bad" />;
+    return <Terminal title="Appointment declined" message="This appointment has been declined. If this is a mistake, please contact HR." tone="bad" />;
   }
   if (status === 'ACTIVE') {
     return <Terminal title="You're all set" message="Your onboarding is complete and your employee account is active. Please log in with the credentials emailed to you." tone="good" />;
@@ -186,7 +186,7 @@ function JoinInner() {
   if (status === 'OFFER_SENT') {
     return (
       <Page>
-        <Card title="Your offer">
+        <Card title="Your appointment">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Info label="Name" value={data.name} />
             <Info label="Designation" value={data.designation} />
@@ -196,19 +196,19 @@ function JoinInner() {
           {data.hasOfferLetter && (
             <div className="mt-5">
               <Button variant="ghost" onClick={() => window.open(`${API_BASE}/onboarding/offer-letter.pdf?code=${encodeURIComponent(code || '')}`, '_blank')}>
-                View offer letter (PDF)
+                View appointment letter (PDF)
               </Button>
             </div>
           )}
           <ErrorText error={actionError} />
           <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-5">
-            <Button variant="danger" disabled={acting} onClick={() => { setActionError(null); setConfirmReject(true); }}>Decline offer</Button>
+            <Button variant="danger" disabled={acting} onClick={() => { setActionError(null); setConfirmReject(true); }}>Decline appointment</Button>
             <Button disabled={acting} onClick={accept}>{acting ? 'Please wait…' : 'Accept & start e-joining'}</Button>
           </div>
         </Card>
         {confirmReject && (
-          <Modal title="Decline this offer?" onClose={() => setConfirmReject(false)}>
-            <p className="text-sm text-slate-600">This cannot be undone. Are you sure you want to decline the offer?</p>
+          <Modal title="Decline this appointment?" onClose={() => setConfirmReject(false)}>
+            <p className="text-sm text-slate-600">This cannot be undone. Are you sure you want to decline the appointment?</p>
             <ErrorText error={actionError} />
             <div className="mt-5 flex justify-end gap-3">
               <Button variant="ghost" onClick={() => setConfirmReject(false)}>Cancel</Button>

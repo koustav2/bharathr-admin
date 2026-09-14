@@ -23,6 +23,15 @@ const NAV: { section: string; items: NavItem[] }[] = [
       { label: 'Onboarding review', href: '/onboarding', staff: true },
       { label: 'Resignations', href: '/resignations', staff: true },
       { label: 'My approvals', href: '/approvals' },
+      { label: 'Leave approvals', href: '/leave-approvals', staff: true },
+      { label: 'Attendance approvals', href: '/attendance-approvals', staff: true },
+    ],
+  },
+  {
+    section: 'Field force',
+    items: [
+      { label: 'Live tracking', href: '/tracking', staff: true },
+      { label: 'Travel report', href: '/travel', staff: true },
     ],
   },
   {
@@ -47,6 +56,7 @@ const NAV: { section: string; items: NavItem[] }[] = [
     items: [
       { label: 'Users & roles', href: '/users', anyAdmin: true },
       { label: 'Approver matrix', href: '/matrix', staff: true },
+      { label: 'Settings', href: '/settings', staff: true },
       { label: 'Audit log', href: '/audit', anyAdmin: true },
       { label: 'Reports & exports', href: '/reports', staff: true },
     ],
