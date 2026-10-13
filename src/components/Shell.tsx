@@ -46,6 +46,7 @@ const NAV: { section: string; items: NavItem[] }[] = [
     items: [
       { label: 'Support desk', href: '/support', staff: true },
       { label: 'Policies', href: '/policies', staff: true },
+      { label: 'Catalogue & Price List', href: '/catalogue', staff: true },
       { label: 'Banners', href: '/banners', staff: true },
       { label: 'Holidays', href: '/holidays', staff: true },
       { label: 'Leave settings', href: '/leave-settings', staff: true },

@@ -12,15 +12,22 @@ export default function EmployeesPage() {
   const [rows, setRows] = useState<any[] | null>(null);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
+  const [department, setDepartment] = useState('');
+  const [departments, setDepartments] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
 
-  const load = useCallback(async (s: string, st: string) => {
+  useEffect(() => {
+    api<any>('/meta/masters').then((m) => setDepartments(m?.departments || [])).catch(() => {});
+  }, []);
+
+  const load = useCallback(async (s: string, st: string, dep: string) => {
     setError(null);
     try {
       const params = new URLSearchParams();
       if (st) params.set('status', st);
       if (s) params.set('search', s);
+      if (dep) params.set('department', dep);
       const qs = params.toString();
       setRows(await api<any[]>(`/employees${qs ? `?${qs}` : ''}`));
     } catch (err: any) {
@@ -29,11 +36,11 @@ export default function EmployeesPage() {
     }
   }, []);
 
-  // Debounced search / immediate status change.
+  // Debounced search / immediate status & department change.
   useEffect(() => {
-    const t = setTimeout(() => load(search, status), search ? 350 : 0);
+    const t = setTimeout(() => load(search, status, department), search ? 350 : 0);
     return () => clearTimeout(t);
-  }, [search, status, load]);
+  }, [search, status, department, load]);
 
   async function exportCsv() {
     setExporting(true);
@@ -74,6 +81,14 @@ export default function EmployeesPage() {
             <Select value={status} onChange={(e) => setStatus(e.target.value)}>
               {STATUSES.map((s) => (
                 <option key={s} value={s}>{s ? s.replace(/_/g, ' ') : 'All statuses'}</option>
+              ))}
+            </Select>
+          </div>
+          <div className="w-52">
+            <Select value={department} onChange={(e) => setDepartment(e.target.value)}>
+              <option value="">All departments</option>
+              {departments.map((d) => (
+                <option key={d} value={d}>{d}</option>
               ))}
             </Select>
           </div>

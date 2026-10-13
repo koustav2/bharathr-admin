@@ -23,11 +23,19 @@ export default function TrackingPage() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<any | null>(null);
   const [date, setDate] = useState(today());
+  const [tick, setTick] = useState(0); // drives live auto-refresh
 
   const mapRef = useRef<any>(null);
   const layerRef = useRef<any>(null);
   const LRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const lastFocusRef = useRef<string>(''); // recenter only when selection/date changes, not on every poll
+
+  // Live refresh: re-pull online list + selected marker every 15s so admins see movement.
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 15000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     api<any>('/meta/masters').then((m) => setDepartments(m?.departments || [])).catch(() => {});
@@ -62,7 +70,7 @@ export default function TrackingPage() {
     }
   }, [department]);
 
-  useEffect(() => { loadSummary(); }, [loadSummary]);
+  useEffect(() => { loadSummary(); }, [loadSummary, tick]);
 
   // Draw the selected employee's latest position + day route.
   useEffect(() => {
@@ -70,6 +78,11 @@ export default function TrackingPage() {
     const map = mapRef.current;
     const layer = layerRef.current;
     if (!L || !map || !layer || !selected) return;
+    // Recenter / re-open the popup only on a new selection or date — not on the
+    // 15s live poll, so the admin can pan/zoom freely while the marker updates.
+    const focusKey = `${selected.employeeId}|${date}`;
+    const isNewFocus = lastFocusRef.current !== focusKey;
+    lastFocusRef.current = focusKey;
     layer.clearLayers();
     (async () => {
       try {
@@ -81,19 +94,21 @@ export default function TrackingPage() {
         if (pts.length > 1) L.polyline(pts, { color: '#4CAF50', weight: 4 }).addTo(layer);
         pts.forEach((p) => L.circleMarker(p, { radius: 4, color: '#0B1C3B', fillOpacity: 0.6 }).addTo(layer));
         if (latest) {
-          L.circleMarker([latest.lat, latest.lon], { radius: 9, color: '#0B1C3B', fillColor: '#4CAF50', fillOpacity: 1, weight: 2 })
+          const marker = L.circleMarker([latest.lat, latest.lon], { radius: 9, color: '#0B1C3B', fillColor: '#4CAF50', fillOpacity: 1, weight: 2 })
             .addTo(layer)
-            .bindPopup(`<b>${selected.name}</b><br/>${latest.locality || ''}<br/>${latest.online ? 'Online' : 'Offline'} · ${fmt.dateTime(latest.updatedAt)}`)
-            .openPopup();
-          map.setView([latest.lat, latest.lon], 14);
-        } else if (pts.length) {
+            .bindPopup(`<b>${selected.name}</b><br/>${latest.locality || ''}<br/>${latest.online ? 'Online' : 'Offline'} · ${fmt.dateTime(latest.updatedAt)}`);
+          if (isNewFocus) {
+            marker.openPopup();
+            map.setView([latest.lat, latest.lon], 14);
+          }
+        } else if (pts.length && isNewFocus) {
           map.fitBounds(pts as any, { padding: [40, 40] });
         }
       } catch {
         /* map draw is best-effort */
       }
     })();
-  }, [selected, date]);
+  }, [selected, date, tick]);
 
   const Item = ({ e, online }: { e: any; online: boolean }) => (
     <button
@@ -114,7 +129,10 @@ export default function TrackingPage() {
     <Shell>
       <div className="mb-5">
         <h1 className="text-xl font-bold text-navy">Live tracking</h1>
-        <p className="mt-1 text-sm text-slate-500">Field-force positions and daily routes.</p>
+        <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500">
+          <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-herb" />
+          Live field-force positions and daily routes — auto-refreshes every 15s.
+        </p>
       </div>
 
       <ErrorText error={error} />
